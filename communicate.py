@@ -2,9 +2,10 @@ import serial
 import serial.tools.list_ports
 import sys
 import glob
-from consts import BAUDRATE,D_DEVICE_LOCATION
+from consts import BAUDRATE,D_DEVICE_LOCATION,CMD_RESET_ON,CMD_RESET_OFF,CMD_WRITE_MEM,APPLY_CMD_CKSUM
+
 dev = None
-def send_uart(data,b_len,device):
+def send_uart(data,b_len,device=None):
     '''Sends the data in data array, encoded as binary in each entry 
         to the device device. 
         Defaults to using the device D_DEVICE_LOCATION specified in consts'''
@@ -55,3 +56,21 @@ def serial_ports():
     print(avail_ports)
     return avail_ports
 
+def send_to_mem(data,device=None,endian="big",bytesize=4):
+    '''sends data (array of ints) to the device memory'''
+    value = []
+    value.append(int(APPLY_CMD_CKSUM(CMD_RESET_ON)).to_bytes(bytesize,endian))#enter reset state
+    device = send_uart(value,len(value),device)
+    #print("return code: " + hex(int.from_bytes(read_word(device),endian)))
+    if int.from_bytes(read_word(device),endian) != APPLY_CMD_CKSUM(CMD_RESET_ON):
+        print("Error writing...")
+    value = []
+    value.append(int(APPLY_CMD_CKSUM(CMD_WRITE_MEM)).to_bytes(bytesize,endian)) #apply write command
+    send_uart(value,len(value),device)
+    value = []
+    value.append(int(2).to_bytes(bytesize,endian))
+    value.append(int(len(data)).to_bytes(bytesize,endian))
+    for i in range(len(data)):
+        value.append(int(data[i]).to_bytes(bytesize,endian))
+    value.append(int(APPLY_CMD_CKSUM(CMD_RESET_OFF)).to_bytes(bytesize,endian))#exit reset state
+    send_uart(value,len(value),device)
