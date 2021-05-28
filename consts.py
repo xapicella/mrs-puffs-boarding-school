@@ -1,2 +1,11 @@
-D_DEVICE_LOCATION='/tty/USB0'
+D_DEVICE_LOCATION='/dev/ttyUSB1'
 SEEDNUM=4
+BAUDRATE=115200
+
+def APPLY_CMD_CKSUM(x):
+    return ((x) << 8) ^ ((x) & 0xFF) ^ (((x) & 0xFF00) >> 8) ^ (((x) & 0xFF0000) >> 16)
+
+
+CMD_RESET_ON  = 0x0FF000
+CMD_RESET_OFF = 0x0FF001
+CMD_WRITE_MEM = 0x0FF002
